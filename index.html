@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GEO Golf 2026 Realista</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#173b38,#071a20 65%);color:#effff9;min-height:100vh}main{max-width:1100px;margin:auto;padding:20px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}h1{font-size:clamp(24px,4vw,38px);margin:0}h1 span{color:#a8f66d}.sub{margin:5px 0 16px;color:#b4d2c9}.stats{display:flex;gap:9px;flex-wrap:wrap}.stat{background:#153b3d;border:1px solid #397268;border-radius:13px;padding:8px 15px;min-width:85px;text-align:center}.stat small{display:block;color:#a4cabe;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}.stat strong{font-size:22px}.game{position:relative;border:5px solid #537a59;border-radius:19px;overflow:hidden;box-shadow:0 22px 70px #0008;background:#164f42}canvas{width:100%;height:auto;display:block;touch-action:none;cursor:crosshair;outline:none}.overlay{position:absolute;inset:0;background:#031b20b9;display:flex;align-items:center;justify-content:center;padding:20px}.overlay.hidden{display:none}.modal{text-align:center;max-width:450px;background:#0d3033;border:1px solid #74c5a4;border-radius:20px;padding:28px;box-shadow:0 20px 50px #0008}.modal h2{margin:0 0 8px;font-size:30px}.modal p{color:#d0e9e1;line-height:1.5}.buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:15px}button{border:0;border-radius:12px;background:#c2f573;color:#153328;padding:12px 18px;font-size:15px;font-weight:800;cursor:pointer}button:hover{filter:brightness(1.08)}button.secondary{background:#244c4e;color:#d8faf0;border:1px solid #4b8d83}.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:13px}.hint{color:#d0e9e1;font-size:14px;line-height:1.45}.hint b{color:#d0fc94}.powerbox{display:flex;align-items:center;gap:10px;color:#d0e9e1;font-size:13px}.meter{height:13px;width:125px;background:#244c4e;border-radius:20px;overflow:hidden}.fill{height:100%;width:0;background:linear-gradient(90deg,#9aed9a,#ffda61,#f07469);transition:width .04s}.footer{font-size:13px;color:#90b5aa;margin-top:18px}@media(max-width:600px){main{padding:10px}.game{border-width:3px}.stat{min-width:65px;padding:6px 10px}.stat strong{font-size:17px}.bar{align-items:start}}select{background:#153b3d;color:#effff9;border:1px solid #497363;border-radius:8px;padding:7px} .modal p{white-space:pre-line}
+#turn{display:none} #turnBoard{margin:12px 0;display:grid;gap:8px} #activeTurn{padding:15px 20px;border:2px solid var(--pc,#fff);border-radius:12px;background:#102c24;color:var(--pc,#fff);font-size:clamp(19px,3vw,30px);font-weight:850;text-align:center} #playerCards{display:flex;gap:8px;flex-wrap:wrap}.playerCard{flex:1;min-width:115px;padding:10px;border:2px solid #ffffff20;border-radius:10px;background:#102b2e;color:#c0d2cc}.playerCard.active{border-color:var(--pc);box-shadow:inset 0 0 0 1px var(--pc);color:white}.playerCard strong{display:block;color:var(--pc)}
+#modeButtons button[aria-pressed="true"]{background:#e8c65d;outline:3px solid white} #modeButtons button[aria-pressed="false"]{background:#244c4e;color:white} #modePicker[hidden]{display:none}</style></head>
+<body><main><section id="onlinePanel" style="padding:16px;background:#102c24;border:1px solid #709774;border-radius:14px;margin-bottom:16px"><h2 style="margin:0 0 12px">GEO Golf · Online</h2><div id="joinControls"><input id="nickname" maxlength="20" placeholder="Tu nombre" value="Jugador"> <button id="createRoom">Crear sala</button> <input id="roomCode" maxlength="6" placeholder="Código de sala" style="width:125px;text-transform:uppercase"> <button id="joinRoom">Unirse</button></div><p id="onlineStatus" role="status">Puedes jugar localmente o crear una sala privada.</p><div id="lobby" hidden><strong id="roomLabel"></strong> <button id="copyInvite" class="secondary">Copiar invitación</button><p id="roster"></p><button id="onlineStart">Empezar torneo online</button> <button id="leaveRoom" class="secondary">Salir</button></div></section><div class="top"><div><h1>⛳ <span>Geo</span> MiniGolf Challenge</h1><p class="sub">Apunta, calcula la fuerza y consigue el par.</p></div><div class="stats"><div class="stat"><small>Hoyo</small><strong id="holeNum">1/18</strong></div><div class="stat"><small>Par</small><strong id="par">2</strong></div><div class="stat"><small>Golpes</small><strong id="strokes">0</strong></div><div class="stat"><small>Total</small><strong id="total">0</strong></div></div></div>
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0;align-items:center"><label>Jugadores <select id="players"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><label>Campo <select id="theme"><option>Tour automático</option><option>Caribbean</option><option>Masters</option><option>Desert</option><option>Night Golf</option></select></label><label>Green <select id="speed"><option value="9">9 · Lento</option><option value="10.5" selected>10.5 · Normal</option><option value="12">12 · Rápido</option></select></label><label><input id="camera" type="checkbox"> Cámara cercana</label><button id="newRound" class="secondary">Nueva partida</button><button id="card" class="secondary">Tarjeta</button><span id="turn"></span><span id="record"></span></div><div id="turnBoard"><div id="activeTurn" aria-live="polite"></div><div id="playerCards"></div></div><div class="game"><canvas tabindex="0" id="course" width="960" height="600" aria-label="Campo de minigolf"></canvas><div class="overlay" id="overlay"><div class="modal"><h2 id="modalTitle">GEO Golf 2026</h2><p id="modalText">18 hoyos, rampas, arena, agua, obstáculos y un reto final. Arrastra desde la bola en dirección contraria al tiro y suelta para golpear.</p><div id="modePicker" style="margin:18px 0"><strong>¿Cuántos jugadores?</strong><div class="buttons" id="modeButtons"><button type="button" data-count="1">1 jugador</button><button type="button" data-count="2">2 jugadores</button><button type="button" data-count="3">3 jugadores</button><button type="button" data-count="4">4 jugadores</button></div><p id="modeStatus"></p></div><div class="buttons"><button id="action">⛳ Empezar partida</button></div></div></div></div>
+<div class="bar"><div class="hint">🖱️ <b>Arrastra desde la bola hacia atrás</b> y suelta para golpear.<br>📱 También funciona con el dedo. Pulsa <b>R</b> para reiniciar el hoyo.</div><div class="powerbox">FUERZA <div class="meter"><div class="fill" id="power"></div></div></div><div class="buttons" style="margin:0"><button class="secondary" id="restart">↻ Reiniciar hoyo</button><button class="secondary" id="sound">🔊 Sonido</button></div></div><p id="messageWater" role="status" style="min-height:24px;margin:6px 0;color:#abe9f5;font-weight:750"></p><p class="footer">Consejo: los golpes suaves dan más control. Las zonas azules son agua y las beige frenan mucho la bola. 18 hoyos · Torneo local por turnos de golpe.</p></main>
+<script>
+(()=>{'use strict';
+const canvas=document.getElementById('course'), ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);const W=960,H=600,R=10;
+const wall=(x,y,w,h)=>({x,y,w,h}),sand=(x,y,w,h)=>({x,y,w,h}),water=(x,y,w,h)=>({x,y,w,h});
+const levels=[
+{name:'Primer golpe',par:2,start:[145,300],cup:[815,300],walls:[],sands:[],waters:[],bumpers:[],moving:[]},
+{name:'El desvío',par:3,start:[135,460],cup:[820,145],walls:[wall(370,70,45,385),wall(585,260,45,265)],sands:[],waters:[],bumpers:[],moving:[]},
+{name:'La playa',par:3,start:[120,300],cup:[840,300],walls:[],sands:[sand(350,120,275,360)],waters:[],bumpers:[],moving:[]},
+{name:'Dos puentes',par:3,start:[115,300],cup:[845,300],walls:[],sands:[],waters:[water(370,55,220,205),water(370,345,220,200)],bumpers:[],moving:[]},
+{name:'Pasillo en zigzag',par:4,start:[130,490],cup:[825,105],walls:[wall(270,55,42,355),wall(470,200,42,345),wall(670,55,42,355)],sands:[],waters:[],bumpers:[],moving:[]},
+{name:'Rebotes',par:3,start:[125,300],cup:[825,300],walls:[wall(425,70,36,175),wall(425,355,36,175)],sands:[],waters:[],bumpers:[{x:355,y:300,r:30},{x:550,y:190,r:35},{x:610,y:415,r:30}],moving:[]},
+{name:'Islas',par:4,start:[115,120],cup:[845,480],walls:[wall(455,55,42,205),wall(455,340,42,205)],sands:[sand(120,390,210,125),sand(625,100,210,110)],waters:[water(315,200,115,125),water(530,270,115,125)],bumpers:[],moving:[]},
+{name:'El molino',par:4,start:[125,300],cup:[840,300],walls:[wall(285,65,30,195),wall(285,335,30,195),wall(665,65,30,195),wall(665,335,30,195)],sands:[],waters:[],bumpers:[{x:485,y:300,r:35}],moving:[{x:485,y:300,length:155,angle:0,speed:.020}]},
+{name:'Gran final',par:5,start:[120,490],cup:[835,110],walls:[wall(250,55,32,340),wall(405,205,32,340),wall(555,55,32,340),wall(705,205,32,340)],sands:[sand(305,410,80,110),sand(605,70,80,115)],waters:[water(470,70,68,105)],bumpers:[{x:345,y:160,r:24},{x:655,y:455,r:24}],moving:[]}
+ ];
+levels.push(
+{name:'Palmeras',par:3,start:[135,300],cup:[820,170],walls:[],sands:[sand(340,180,240,260)],waters:[],bumpers:[{x:690,y:350,r:33}],moving:[]},
+{name:'Costa azul',par:4,start:[125,440],cup:[835,130],walls:[],sands:[sand(600,280,180,190)],waters:[water(320,55,220,320)],bumpers:[],moving:[]},
+{name:'El jardín',par:3,start:[130,150],cup:[830,440],walls:[wall(450,220,42,325)],sands:[],waters:[],bumpers:[{x:680,y:190,r:45}],moving:[]},
+{name:'Dunas',par:4,start:[130,300],cup:[830,300],walls:[],sands:[sand(270,65,190,310),sand(510,270,205,260)],waters:[],bumpers:[],moving:[]},
+{name:'Oasis',par:4,start:[125,450],cup:[835,145],walls:[],sands:[sand(580,300,195,220)],waters:[water(320,180,220,240)],bumpers:[],moving:[]},
+{name:'La colina',par:3,start:[130,280],cup:[830,320],walls:[],sands:[sand(430,70,220,150)],waters:[],bumpers:[{x:470,y:340,r:48}],moving:[]},
+{name:'Luz de luna',par:3,start:[140,420],cup:[820,160],walls:[wall(390,55,36,320)],sands:[],waters:[],bumpers:[],moving:[]},
+{name:'El faro',par:4,start:[125,300],cup:[835,300],walls:[],sands:[],waters:[water(330,55,260,165),water(330,380,260,165)],bumpers:[{x:475,y:300,r:35}],moving:[{x:475,y:300,length:125,angle:0,speed:.014}]},
+{name:'GEO Championship',par:5,start:[125,470],cup:[835,125],walls:[wall(270,55,35,330),wall(660,215,35,330)],sands:[sand(470,340,150,180)],waters:[water(410,55,150,220)],bumpers:[],moving:[]});
+const field={x:55,y:55,w:850,h:490};
+let net=null, netWaiting=false, netPaused=false;
+let turnStates=[], shotPending=false, player=0, count=1, cards=[], trace=[], replay=null, sink=0, swing=0, swingAngle=0, cameraX=480,cameraY=300,zoom=1;
+let idx=0, strokes=0, total=0, playing=false,aiming=false,pointer=null,ball=null,lastSafe=null,shotFrames=0,won=false,scorecard=[],soundOn=true,audio=null,prevTime=0,waterSplash=null,shotStart=null;
+function inRect(x,y,q,pad=0){return x>=q.x-pad&&x<=q.x+q.w+pad&&y>=q.y-pad&&y<=q.y+q.h+pad}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
+function setup(){shotPending=false;sink=0;trace=[];replay=null;swing=0;const l=levels[idx];ball={x:l.start[0],y:l.start[1],vx:0,vy:0,rot:0,spin:0};lastSafe={x:ball.x,y:ball.y};strokes=0;shotFrames=0;aiming=false;pointer=null;won=false;waterSplash=null;shotStart={x:ball.x,y:ball.y};updateUI()}
+const playerColors=['#ffffff','#ffcf48','#60c8ff','#ff8dc7'];
+function renderTurns(){const c=playerColors[player];const status=won?'Hoyo completado':waterSplash?'Bola al agua':shotPending?'Golpe en curso':aiming?'Preparando golpe':'Tu turno · listo para tirar';const banner=$('activeTurn');banner.style.setProperty('--pc',c);banner.textContent=`${net?.names?.[player]||'JUGADOR '+(player+1)} · ${net&&net.seat!==player?'Esperando · '+status.replace('Tu turno · ',''):status} · Hoyo ${idx+1}`;let html='';for(let i=0;i<count;i++){const done=!!turnStates[i]?.done;const hits=i===player?strokes:turnStates[i]?.strokes||0;html+=`<div class="playerCard ${i===player?'active':''}" style="--pc:${playerColors[i]}"><strong>● ${escapeName(net?.names?.[i]||'Jugador '+(i+1))}</strong>${done?'Embocado':i===player?'EN TURNO':'Esperando'} · ${hits} golpes</div>`;}if($('playerCards').innerHTML!==html)$('playerCards').innerHTML=html;}
+function updateUI(){renderTurns();$('turn').textContent=`Jugador ${player+1}/${count} · Pendiente ${idx%3===0?"→":idx%3===1?"↘":"↗"}`;total=(cards[player]||[]).reduce((a,b)=>a+b,0)+(cards[player]?.[idx]===undefined?strokes:0);$('holeNum').textContent=(idx+1)+'/18';$('par').textContent=levels[idx].par;$('strokes').textContent=strokes;$('total').textContent=total;$('power').style.width=pointer&&aiming?Math.round(aimPower()*100)+'%':'0%'}
+function show(title,body,button,fn){$('modePicker').hidden=!!net||fn!==newRound;$('modalTitle').textContent=title;$('modalText').textContent=body;$('action').textContent=button;$('overlay').classList.remove('hidden');$('action').onclick=()=>{$('overlay').classList.add('hidden');fn()}}
+function beep(freq=420,duration=.08){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();const osc=audio.createOscillator(),gain=audio.createGain();osc.frequency.value=freq;osc.type='sine';gain.gain.setValueAtTime(.035,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);osc.connect(gain).connect(audio.destination);osc.start();osc.stop(audio.currentTime+duration)}catch(e){}}
+function stopped(){return Math.hypot(ball.vx,ball.vy)<.095}
+function getPoint(e){const r=canvas.getBoundingClientRect();return{x:((e.clientX-r.left)*W/r.width-W/2)/zoom+cameraX,y:((e.clientY-r.top)*H/r.height-H/2)/zoom+cameraY}}
+function aimPower(){return clamp(Math.hypot(pointer.x-ball.x,pointer.y-ball.y)/175,0,1)}
+canvas.addEventListener('pointerdown',e=>{if(!canShoot()||!playing||won||waterSplash||shotPending||!stopped())return;const p=getPoint(e);if(Math.hypot(p.x-ball.x,p.y-ball.y)>85)return;aiming=true;pointer=p;canvas.setPointerCapture(e.pointerId);updateUI()});
+canvas.addEventListener('pointermove',e=>{if(!aiming)return;pointer=getPoint(e);updateUI()});
+function launch(dx,dy){const mag=Math.hypot(dx,dy);if(mag<9||!playing||won||waterSplash||shotPending||!stopped())return false;shotPending=true;shotStart={x:ball.x,y:ball.y};const force=clamp(mag,0,175)*.105;ball.vx=dx/mag*force;ball.vy=dy/mag*force;strokes++;shotFrames=0;trace=[];swing=12;swingAngle=Math.atan2(dy,dx);beep(850,.045);updateUI();return true;}
+function release(e){if(!aiming)return;pointer=getPoint(e);const dx=ball.x-pointer.x,dy=ball.y-pointer.y;aiming=false;pointer=null;if(canShoot()&&Math.hypot(dx,dy)>=9){if(net){netWaiting=true;api('shot',{dx,dy,epoch:net.epoch}).catch(err=>{netWaiting=false;status(err.message)})}else launch(dx,dy);}updateUI();}
+canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',()=>{aiming=false;pointer=null;updateUI()});
+$('restart').onclick=()=>{if(!playing||won)return;total-=strokes;setup()};
+$('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'🔊 Sonido':'🔇 Silencio'};
+window.addEventListener('keydown',e=>{if(!net&&e.key.toLowerCase()==='r'&&playing&&!won&&!shotPending){for(const c of cards)delete c[idx];startSharedHole()}});
+function wallHit(q){const nx=clamp(ball.x,q.x,q.x+q.w),ny=clamp(ball.y,q.y,q.y+q.h),dx=ball.x-nx,dy=ball.y-ny,d=Math.hypot(dx,dy);if(d>=R)return;let ux,uy;if(d>.0001){ux=dx/d;uy=dy/d}else{const arr=[{d:Math.abs(ball.x-q.x),x:-1,y:0},{d:Math.abs(ball.x-(q.x+q.w)),x:1,y:0},{d:Math.abs(ball.y-q.y),x:0,y:-1},{d:Math.abs(ball.y-(q.y+q.h)),x:0,y:1}].sort((a,b)=>a.d-b.d);ux=arr[0].x;uy=arr[0].y}const overlap=R-d+0.1;ball.x+=ux*overlap;ball.y+=uy*overlap;const vn=ball.vx*ux+ball.vy*uy;if(vn<0){ball.vx-=1.68*vn*ux;ball.vy-=1.68*vn*uy;beep(170,.035)}}
+function circleHit(c){const dx=ball.x-c.x,dy=ball.y-c.y,d=Math.hypot(dx,dy)||.01,min=R+c.r;if(d>=min)return;const ux=dx/d,uy=dy/d;ball.x=c.x+ux*(min+.2);ball.y=c.y+uy*(min+.2);const vn=ball.vx*ux+ball.vy*uy;if(vn<0){ball.vx-=1.7*vn*ux;ball.vy-=1.7*vn*uy;beep(230,.05)}}
+function bladeHit(b){let dx=Math.cos(b.angle)*b.length/2,dy=Math.sin(b.angle)*b.length/2;const x1=b.x-dx,y1=b.y-dy,x2=b.x+dx,y2=b.y+dy;const vx=x2-x1,vy=y2-y1,t=clamp(((ball.x-x1)*vx+(ball.y-y1)*vy)/(vx*vx+vy*vy),0,1);const nx=x1+vx*t,ny=y1+vy*t,d=Math.hypot(ball.x-nx,ball.y-ny);if(d<R+8){const ux=(ball.x-nx)/(d||1),uy=(ball.y-ny)/(d||1);ball.x=nx+ux*(R+8);ball.y=ny+uy*(R+8);ball.vx+=ux*2.4;ball.vy+=uy*2.4;beep(260,.05)}}
+function waterContact(x,y,q){
+  // Circular collision: a ball touching the water's edge already falls in.
+  const nearestX=clamp(x,q.x,q.x+q.w),nearestY=clamp(y,q.y,q.y+q.h);
+  return Math.hypot(x-nearestX,y-nearestY)<R*0.86;
+}
+function beginSplash(){
+  if(waterSplash)return;
+  waterSplash={x:ball.x,y:ball.y,time:0};
+  ball.vx=0;ball.vy=0;ball.spin=0;
+  aiming=false;pointer=null;
+  strokes+=1; // One penalty stroke in addition to the original shot.
+  $('messageWater').textContent='💦 ¡Bola al agua! +1 golpe de penalización. Repite el tiro.';
+  beep(135,.24);updateUI();
+}
+function update(dt){if(!playing||won)return;
+ if(waterSplash){
+   waterSplash.time+=dt;
+   if(waterSplash.time>57){
+     const back=shotStart||levels[idx].start;
+     ball.x=back.x??back[0];ball.y=back.y??back[1];
+     ball.vx=0;ball.vy=0;ball.spin=0;waterSplash=null;
+     $('messageWater').textContent='⛳ Desde el último golpe: vuelve a lanzar.';
+   }
+   updateUI();if(!waterSplash&&shotPending)finishShot();return;
+ }
+const l=levels[idx];for(const b of l.moving)b.angle+=b.speed*dt;if(!shotPending)return;let n=Math.max(1,Math.ceil(dt*3));for(let sub=0;sub<n;sub++){const step=dt/n;if(Math.hypot(ball.vx,ball.vy)>.12){ball.vx+=.023*step;ball.vy+=(idx%3===0?0:idx%3===1?.035:-.035)*step;}ball.x+=ball.vx*step;ball.y+=ball.vy*step;let hit=false;if(ball.x<field.x+R){ball.x=field.x+R;ball.vx=Math.abs(ball.vx)*.76;ball.vy*=.97;ball.spin*=.74;hit=true}if(ball.x>field.x+field.w-R){ball.x=field.x+field.w-R;ball.vx=-Math.abs(ball.vx)*.76;ball.vy*=.97;ball.spin*=.74;hit=true}if(ball.y<field.y+R){ball.y=field.y+R;ball.vy=Math.abs(ball.vy)*.76;ball.vx*=.97;ball.spin*=.74;hit=true}if(ball.y>field.y+field.h-R){ball.y=field.y+field.h-R;ball.vy=-Math.abs(ball.vy)*.76;ball.vx*=.97;ball.spin*=.74;hit=true}if(hit)beep(190,.025);for(const q of l.walls)wallHit(q);for(const q of l.bumpers)circleHit(q);for(const q of l.moving)bladeHit(q);
+const wet=l.waters.some(q=>waterContact(ball.x,ball.y,q));if(wet){beginSplash();break}
+let sanded=l.sands.some(q=>ctx.isPointInPath(sandShape(q),ball.x,ball.y));
+const speed=Math.hypot(ball.vx,ball.vy);
+if(speed>0){
+  // Fricción de rodadura: reduce una cantidad fija de velocidad por segundo
+  // en vez de multiplicar por un porcentaje excesivo en cada fotograma.
+  const resistance=sanded?0.48:0.18*10.5/Number($("speed").value);
+  const newSpeed=Math.max(0,speed-resistance*step);
+  const ratio=newSpeed/speed;
+  ball.vx*=ratio;ball.vy*=ratio;
+  // La impresión PRO V1 rota conforme a la distancia recorrida.
+  // GEO pertenece al terreno y no se altera.
+  const travel=speed*step;
+  const orientation=Math.abs(ball.vx)>=Math.abs(ball.vy)?(ball.vx>=0?1:-1):(ball.vy>=0?1:-1);
+  ball.rot+=orientation*travel/R;
+  ball.spin=orientation*newSpeed/R;
+}
+if(Math.hypot(ball.vx,ball.vy)<0.055){ball.vx=ball.vy=0;ball.spin*=0.78;if(Math.abs(ball.spin)<0.002)ball.spin=0;lastSafe={x:ball.x,y:ball.y}}else if(!sanded&&shotFrames%12===0){lastSafe={x:ball.x,y:ball.y}};
+const hole=l.cup,d=Math.hypot(ball.x-hole[0],ball.y-hole[1]);if(d<14&&Math.hypot(ball.vx,ball.vy)<4.2){ball.x=hole[0];ball.y=hole[1];ball.vx=ball.vy=0;ball.spin=0;won=true;sink=1;beep(780,.1);setTimeout(()=>{if(count===1&&strokes===1&&trace.length>2){replay={i:0};$("messageWater").textContent="HOLE IN ONE · Repetición";}else nextHole()},650);break}}
+shotFrames++;if(shotFrames>900&&!won&&!waterSplash){ball.vx=ball.vy=0;}updateUI();if(shotPending&&!won&&!waterSplash&&stopped())finishShot()}
+function cardText(){return Array.from({length:count},(_,i)=>`Jugador ${i+1}: ${(cards[i]||[]).map((v,j)=>`H${j+1}: ${v}`).join(' · ')} | Total ${(cards[i]||[]).reduce((a,b)=>a+b,0)}`).join('\n')}
+function startSharedHole(){const [x,y]=levels[idx].start;turnStates=Array.from({length:count},()=>({ball:{x,y,vx:0,vy:0,rot:0,spin:0},strokes:0,done:false}));player=0;setup();$('messageWater').textContent='Jugador 1 · Hoyo '+(idx+1);}
+function newRound(){count=Number($('players').value);$('modePicker').hidden=true;idx=0;cards=Array.from({length:count},()=>[]);startSharedHole();playing=true;}
+function saveTurn(done=false){turnStates[player]={ball:{...ball,vx:0,vy:0},strokes,done};shotPending=false;}
+function switchPlayer(next){player=next;const saved=turnStates[player];setup();if(saved){ball={...saved.ball};strokes=saved.strokes;lastSafe={x:ball.x,y:ball.y};shotStart={...lastSafe};}playing=true;updateUI();$('messageWater').textContent=`AHORA TIRA JUGADOR ${player+1} · Hoyo ${idx+1} · Golpe ${strokes+1}`;}
+function nextActive(){for(let i=1;i<=count;i++){const n=(player+i)%count;if(!turnStates[n]?.done)return n;}return -1;}
+function finishShot(){saveTurn();if(count===1)return;const n=nextActive();if(n===player||n<0)return;switchPlayer(n);}
+
+function nextHole(){cards[player][idx]=strokes;saveTurn(true);const result=strokes-levels[idx].par;const label=strokes===1?'¡Hole in one!':result===0?'Par':result===-1?'Birdie':result===-2?'Eagle':result>0?'+'+result:String(result);const n=nextActive();if(n!==-1){switchPlayer(n);return;}if(idx===levels.length-1){playing=false;const totals=cards.map(c=>c.reduce((a,b)=>a+b,0));const best=Math.min(...totals);try{const old=Number(localStorage.getItem('geoBest'))||Infinity;if(best<old)localStorage.setItem('geoBest',best);$('record').textContent='Récord: '+localStorage.getItem('geoBest')}catch(e){}show('Fin del torneo',cardText(),'Nueva partida',net?()=>location.reload():newRound);}else{show(label,`Todos han completado el hoyo ${idx+1}.`,'Siguiente hoyo',()=>{idx++;startSharedHole();playing=true;});}}
+function roundRect(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke()}}
+function drawWoodBarrier(q){
+  const vertical=q.h>=q.w;
+  const base=ctx.createLinearGradient(q.x,q.y,vertical?q.x+q.w:q.x,vertical?q.y:q.y+q.h);
+  if(vertical){base.addColorStop(0,'#d0a06e');base.addColorStop(.12,'#bf8f63');base.addColorStop(.5,'#986d4e');base.addColorStop(.82,'#7e5a41');base.addColorStop(1,'#694a36');}
+  else{base.addColorStop(0,'#d0a06e');base.addColorStop(.18,'#ba875d');base.addColorStop(.5,'#916647');base.addColorStop(.85,'#7a563c');base.addColorStop(1,'#684834');}
+  ctx.save();
+  ctx.shadowColor='#00000055';ctx.shadowBlur=8;ctx.shadowOffsetY=5;
+  roundRect(q.x,q.y,q.w,q.h,8,base,'#e2bd8f');
+  ctx.shadowColor='transparent';
+  ctx.save();
+  ctx.beginPath();ctx.roundRect(q.x+1.5,q.y+1.5,q.w-3,q.h-3,7);ctx.clip();
+  const grainCount=vertical?Math.max(6,Math.floor(q.w/6)):Math.max(5,Math.floor(q.h/6));
+  for(let i=0;i<grainCount;i++){
+    const t=(i+.5)/grainCount;
+    ctx.strokeStyle=i%2===0?'#6f4a33aa':'#c89c6faa';
+    ctx.lineWidth=i%3===0?1.6:1;
+    ctx.beginPath();
+    if(vertical){
+      const x=q.x+4+t*(q.w-8);
+      ctx.moveTo(x,q.y+6);
+      ctx.bezierCurveTo(x-2,q.y+q.h*.28,x+2,q.y+q.h*.6,x-1,q.y+q.h-6);
+    }else{
+      const y=q.y+4+t*(q.h-8);
+      ctx.moveTo(q.x+6,y);
+      ctx.bezierCurveTo(q.x+q.w*.28,y-2,q.x+q.w*.62,y+2,q.x+q.w-6,y-1);
+    }
+    ctx.stroke();
+  }
+  ctx.strokeStyle='#ffffff30';ctx.lineWidth=3;
+  ctx.beginPath();
+  if(vertical){ctx.moveTo(q.x+4,q.y+8);ctx.lineTo(q.x+q.w-4,q.y+8);}else{ctx.moveTo(q.x+8,q.y+4);ctx.lineTo(q.x+8,q.y+q.h-4);}
+  ctx.stroke();
+  ctx.strokeStyle='#4f3424aa';ctx.lineWidth=3;
+  ctx.beginPath();
+  if(vertical){ctx.moveTo(q.x+5,q.y+q.h-7);ctx.lineTo(q.x+q.w-5,q.y+q.h-7);}else{ctx.moveTo(q.x+q.w-8,q.y+5);ctx.lineTo(q.x+q.w-8,q.y+q.h-5);}
+  ctx.stroke();
+  for(let k=0;k<2;k++){
+    const cx=vertical?q.x+q.w*(k?0.68:0.32):q.x+q.w*(k?0.72:0.28);
+    const cy=vertical?q.y+q.h*(k?0.72:0.28):q.y+q.h*(k?0.66:0.34);
+    ctx.fillStyle='#6c4a35aa';ctx.beginPath();ctx.ellipse(cx,cy,vertical?2.6:4.2,vertical?4.2:2.6,(vertical?.2:0),0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#ddb08977';ctx.lineWidth=.8;ctx.beginPath();ctx.ellipse(cx,cy,vertical?4.5:6.5,vertical?7:4,(vertical?.2:0),0,Math.PI*2);ctx.stroke();
+  }
+  ctx.restore();
+  ctx.restore();
+}
+// Pre-render the turf just once to keep animations smooth.
+function makeTurfTexture(){
+ const c=document.createElement('canvas');c.width=field.w;c.height=field.h;
+ const tc=c.getContext('2d');const pixels=tc.createImageData(c.width,c.height);
+ let seed=20993;const rand=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296};
+ const clamp255=v=>Math.max(0,Math.min(255,v));
+ for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++){
+  const i=(y*c.width+x)*4;
+  // Subtle undulations and a fine, non-repeating grain of closely cut turf.
+  const low=Math.sin(x*.014+y*.009)*2.2+Math.sin(x*.033-y*.025)*1.6;
+  const mid=Math.sin(x*.17+y*.11)*1.6;
+  const grain=(rand()-.5)*19;
+  const stripe=Math.sin((y+x*.07)*.032)*1.5;
+  const irregular=3*Math.sin(y*.023)+2*Math.sin(x*.019);
+  const edge=Math.min(x,y,c.width-1-x,c.height-1-y);
+  const greenMix=Math.max(0,Math.min(1,(edge-(10+irregular))/22));
+  // Fringe: slightly longer, dark grass. Green: muted, natural putting turf.
+  const l=low+mid+grain+stripe;
+  pixels.data[i]=clamp255(43+greenMix*40+l*.8);
+  pixels.data[i+1]=clamp255(95+greenMix*46+l);
+  pixels.data[i+2]=clamp255(43+greenMix*19+l*.64);
+  pixels.data[i+3]=255;
+ }
+ tc.putImageData(pixels,0,0);
+ // Thousands of tiny highlights/shadows emulate cut grass fibres.
+ for(let i=0;i<36000;i++){
+  let x=rand()*c.width,y=rand()*c.height;
+  tc.strokeStyle=rand()>.52?'rgba(190,217,134,.10)':'rgba(16,60,22,.11)';
+  tc.lineWidth=rand()*.75+.3;tc.beginPath();tc.moveTo(x,y);tc.lineTo(x+(rand()-.5)*1.5,y-1.2-rand()*1.8);tc.stroke();
+ }
+ const shade=tc.createRadialGradient(c.width*.5,c.height*.43,50,c.width*.5,c.height*.48,c.width*.73);
+ shade.addColorStop(0,'rgba(245,255,205,.035)');shade.addColorStop(1,'rgba(9,38,16,.13)');
+ tc.fillStyle=shade;tc.fillRect(0,0,c.width,c.height);
+ return c;
+}
+const turfTexture=makeTurfTexture();
+// Búnker inspirado en arena de campo real. Una forma asimétrica
+// controla tanto la imagen como el rozamiento de la pelota.
+const sandPathCache=new WeakMap();
+function sandShape(q){
+ if(sandPathCache.has(q)) return sandPathCache.get(q);
+ const x=q.x,y=q.y,w=q.w,h=q.h;
+ const pts=[
+  [.12,.13],[.29,.045],[.49,.075],[.69,.025],[.88,.12],
+  [.97,.28],[.92,.46],[.985,.65],[.88,.84],[.69,.93],
+  [.47,.975],[.25,.93],[.075,.83],[.025,.63],[.09,.47],[.015,.28]
+ ].map(([a,b])=>[x+a*w,y+b*h]);
+ const path=new Path2D();
+ const last=pts[pts.length-1],first=pts[0];
+ path.moveTo((last[0]+first[0])/2,(last[1]+first[1])/2);
+ for(let i=0;i<pts.length;i++){
+  const a=pts[i],b=pts[(i+1)%pts.length];
+  path.quadraticCurveTo(a[0],a[1],(a[0]+b[0])/2,(a[1]+b[1])/2);
+ }
+ path.closePath();
+ sandPathCache.set(q,path);
+ return path;
+}
+const bunkerTextures=new WeakMap();
+function drawSandBunker(q){
+ const path=sandShape(q);
+ ctx.save();
+ // Un labio de hierba proyecta una sombra suave sobre la arena.
+ ctx.shadowColor='rgba(12,37,13,.58)';
+ ctx.shadowBlur=16;ctx.shadowOffsetY=5;
+ ctx.fillStyle='#d0ad73';ctx.fill(path);
+ ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+ ctx.lineWidth=8;ctx.strokeStyle='#285e2c';ctx.stroke(path);
+ ctx.lineWidth=3;ctx.strokeStyle='#659146';ctx.stroke(path);
+ // Arena cálida, mate y con ligera variación natural.
+ ctx.save();ctx.clip(path);
+ const gradient=ctx.createLinearGradient(q.x,q.y,q.x+q.w*.45,q.y+q.h);
+ gradient.addColorStop(0,'#ead3a5');
+ gradient.addColorStop(.35,'#dfbf8a');
+ gradient.addColorStop(.72,'#d6b17a');
+ gradient.addColorStop(1,'#c49b69');
+ ctx.fillStyle=gradient;ctx.fillRect(q.x,q.y,q.w,q.h);
+ // La textura se calcula una sola vez y se reutiliza por fotograma.
+ if(!bunkerTextures.has(q)){
+  const c=document.createElement('canvas');
+  c.width=Math.ceil(q.w);c.height=Math.ceil(q.h);
+  const t=c.getContext('2d');
+  let seed=51729;
+  function rand(){seed=(1664525*seed+1013904223)>>>0;return seed/4294967296}
+  for(let i=0;i<14000;i++){
+   const px=rand()*c.width,py=rand()*c.height;
+   const rr=.25+rand()*.85;
+   t.fillStyle=rand()<.48?'rgba(255,247,218,.28)':'rgba(109,75,40,.14)';
+   t.beginPath();t.arc(px,py,rr,0,Math.PI*2);t.fill();
+  }
+  // Líneas sutiles de rastrillo: próximas, curvas y poco contrastadas.
+  for(let j=-30;j<c.height+35;j+=11){
+   for(const [offset,color] of [[0,'rgba(100,72,43,.10)'],[2,'rgba(255,246,219,.14)']]){
+    t.strokeStyle=color;t.lineWidth=1.15;t.beginPath();
+    t.moveTo(-15,j+offset);
+    t.bezierCurveTo(c.width*.28,j-9+offset,c.width*.63,j+12+offset,c.width+15,j+offset);
+    t.stroke();
+   }
+  }
+  // Sombras granuladas para dar irregularidad sin dibujar piedritas cuadradas.
+  for(let i=0;i<80;i++){
+   const x=rand()*c.width,y=rand()*c.height,r=2+rand()*8;
+   const gr=t.createRadialGradient(x,y,0,x,y,r);
+   gr.addColorStop(0,rand()<.5?'rgba(90,64,38,.075)':'rgba(255,255,235,.10)');
+   gr.addColorStop(1,'rgba(0,0,0,0)');
+   t.fillStyle=gr;t.fillRect(x-r,y-r,r*2,r*2);
+  }
+  bunkerTextures.set(q,c);
+ }
+ ctx.drawImage(bunkerTextures.get(q),q.x,q.y);
+ const shade=ctx.createRadialGradient(q.x+q.w*.53,q.y+q.h*.53,q.w*.2,q.x+q.w*.5,q.y+q.h*.5,q.h*.7);
+ shade.addColorStop(0,'rgba(255,255,255,0)');
+ shade.addColorStop(1,'rgba(83,52,27,.16)');
+ ctx.fillStyle=shade;ctx.fillRect(q.x,q.y,q.w,q.h);
+ ctx.restore();
+ // Sombra de la pared de césped del búnker, ligeramente irregular.
+ ctx.lineWidth=2.4;ctx.strokeStyle='rgba(246,220,170,.50)';
+ ctx.stroke(path);
+ ctx.restore();
+}
+function drawCenterBumper(b){
+ ctx.save();ctx.shadowColor='#101e2477';ctx.shadowBlur=12;ctx.shadowOffsetX=3;ctx.shadowOffsetY=5;
+ const rim=ctx.createRadialGradient(b.x-b.r*.3,b.y-b.r*.4,b.r*.08,b.x,b.y,b.r*1.08);
+ rim.addColorStop(0,'#a8bac0');rim.addColorStop(.65,'#536f78');rim.addColorStop(1,'#253e48');
+ ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle=rim;ctx.fill();
+ ctx.shadowColor='transparent';ctx.lineWidth=5;ctx.strokeStyle='#d3ded3';ctx.stroke();
+ ctx.beginPath();ctx.arc(b.x,b.y,b.r-6,Math.PI*1.12,Math.PI*1.87);ctx.lineWidth=2.3;ctx.strokeStyle='#ffffff50';ctx.stroke();
+ ctx.beginPath();ctx.arc(b.x,b.y,b.r-4,.1,Math.PI*.8);ctx.strokeStyle='#0c273855';ctx.lineWidth=3;ctx.stroke();ctx.restore();
+}
+const geoSpots=new Map();
+function draw(){ctx.clearRect(0,0,W,H);ctx.save();ctx.translate(W/2,H/2);ctx.scale(zoom,zoom);ctx.translate(-cameraX,-cameraY);ctx.fillStyle='#133a32';ctx.fillRect(0,0,W,H);
+const theme=$('theme').value==='Tour automático'?['Caribbean','Masters','Desert','Night Golf'][Math.min(3,Math.floor(idx/5))]:$('theme').value;
+ctx.fillStyle={Caribbean:'#567c68',Masters:'#304b30',Desert:'#ac9367','Night Golf':'#142836'}[theme];ctx.fillRect(0,0,W,H);
+for(let i=0;i<38;i++){const x=24+(i*97)%912,y=i%2?20:580;ctx.fillStyle='#172b2355';ctx.beginPath();ctx.ellipse(x+5,y+6,17,10,0,0,7);ctx.fill();ctx.fillStyle=theme==='Desert'?'#8e805e':theme==='Night Golf'?'#253e39':'#365c32';ctx.beginPath();ctx.arc(x,y,12+i%6,0,7);ctx.fill();if(theme==='Caribbean'){ctx.strokeStyle='#7e9b4b';for(let k=0;k<7;k++){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(k*.9)*17,y+Math.sin(k*.9)*14);ctx.stroke()}}if(theme==='Masters'){ctx.fillStyle='#c66c87';ctx.fillRect(x-4,y-4,6,6)}}
+ctx.save();ctx.shadowColor='#000a';ctx.shadowBlur=28;ctx.shadowOffsetY=10;roundRect(field.x-20,field.y-20,field.w+40,field.h+40,34,'#4e301c','#8c6744');ctx.restore();roundRect(field.x-14,field.y-14,field.w+28,field.h+28,28,'#6f4c31','#b98a5e');ctx.save();ctx.beginPath();ctx.roundRect(field.x-14,field.y-14,field.w+28,field.h+28,28);ctx.clip();for(let yy=field.y-18;yy<field.y+field.h+22;yy+=10){ctx.strokeStyle=yy%20===0?'#ffffff12':'#00000016';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(field.x-30,yy);ctx.lineTo(field.x+field.w+30,yy+Math.sin(yy*.08)*6);ctx.stroke()}ctx.restore();
+// A single cached turf texture: realistic irregular blades and muted grass, not cartoon stripes.
+ctx.save();ctx.beginPath();ctx.roundRect(field.x,field.y,field.w,field.h,18);ctx.clip();
+ctx.drawImage(turfTexture,field.x,field.y);ctx.save();ctx.strokeStyle='#183c241c';ctx.lineWidth=20;ctx.beginPath();ctx.moveTo(75,100);ctx.bezierCurveTo(220,60,300,105,480,78);ctx.bezierCurveTo(680,56,790,85,875,110);ctx.stroke();ctx.restore();
+ctx.save();ctx.globalAlpha=.12;ctx.fillStyle=theme==='Desert'?'#b4a64f':theme==='Night Golf'?'#122f62':theme==='Caribbean'?'#76ac47':'#446c20';ctx.fillRect(field.x,field.y,field.w,field.h);ctx.restore();
+// GEO se pinta únicamente en una zona libre, sin superponerse a obstáculos.
+// Calculamos el espacio real del texto, incluyendo un margen de seguridad.
+function findGeoSpot(level){
+  if(geoSpots.has(level))return geoSpots.get(level);
+  const obstacles=[...level.walls,...level.waters,...level.sands];
+  // No tapar los círculos, el hoyo, la salida ni las aspas del molino.
+  const circles=[
+    ...level.bumpers.map(b=>({x:b.x,y:b.y,r:b.r+12})),
+    {x:level.start[0],y:level.start[1],r:52},
+    {x:level.cup[0],y:level.cup[1],r:66},
+    ...level.moving.map(b=>({x:b.x,y:b.y,r:b.length/2+25}))
+  ];
+  const test=(x,y,w,h)=>{
+    const left=x-w/2-13,right=x+w/2+13,top=y-h/2-13,bottom=y+h/2+13;
+    if(left<field.x+18||right>field.x+field.w-18||top<field.y+18||bottom>field.y+field.h-18)return false;
+    for(const o of obstacles){
+      if(left<o.x+o.w+8&&right>o.x-8&&top<o.y+o.h+8&&bottom>o.y-8)return false;
+    }
+    for(const c of circles){
+      const px=clamp(c.x,left,right),py=clamp(c.y,top,bottom);
+      if(Math.hypot(c.x-px,c.y-py)<c.r)return false;
+    }
+    return true;
+  };
+  // Preferimos un logo grande y centrado; reducimos si el hoyo es estrecho.
+  for(const size of [112,100,88,76,64,54,44,36,28]){
+    ctx.save();ctx.font=`900 ${size}px system-ui, Arial`;
+    const width=ctx.measureText('GEO').width;
+    ctx.restore();
+    const height=size*.92;
+    let best=null;
+    for(let y=field.y+34;y<field.y+field.h-25;y+=11){
+      for(let x=field.x+40;x<field.x+field.w-30;x+=11){
+        if(!test(x,y,width,height))continue;
+        const distance=Math.hypot((x-(field.x+field.w/2))*.85,y-(field.y+field.h/2));
+        if(!best||distance<best.distance)best={x,y,size,distance};
+      }
+    }
+    if(best){geoSpots.set(level,best);return best;}
+  }
+  geoSpots.set(level,null);return null;
+}
+const l=levels[idx];
+const logo=findGeoSpot(l);
+if(logo){
+  ctx.save();ctx.translate(logo.x,logo.y);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font=`900 ${logo.size}px system-ui, Arial`;
+  ctx.fillStyle='#e5ffcb30';ctx.strokeStyle='#d0ffc84a';ctx.lineWidth=Math.max(1.2,logo.size/50);
+  ctx.fillText('GEO',0,0);ctx.strokeText('GEO',0,0);
+  ctx.restore();
+}
+for(const q of l.waters){const g=ctx.createLinearGradient(q.x,q.y,q.x+q.w,q.y+q.h);g.addColorStop(0,'#6da9a6');g.addColorStop(.35,'#286a79');g.addColorStop(1,'#123d52');roundRect(q.x,q.y,q.w,q.h,12,g,'#557e63');ctx.save();ctx.beginPath();ctx.roundRect(q.x,q.y,q.w,q.h,12);ctx.clip();for(let j=0;j<22;j++){const x=q.x+(j*73)%q.w,y=q.y+(j*47+prevTime*.012)%q.h;ctx.strokeStyle='#b9e4da35';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+12,y-4,x+31,y);ctx.stroke()}ctx.restore()}
+if(waterSplash){
+ const t=waterSplash.time,wx=waterSplash.x,wy=waterSplash.y;
+ ctx.save();
+ for(let i=0;i<3;i++){
+  const phase=Math.max(0,t-i*8),rad=9+phase*1.35;
+  ctx.strokeStyle=`rgba(205,245,255,${Math.max(0,.85-phase/55)})`;
+  ctx.lineWidth=2.8-i*.6;ctx.beginPath();ctx.ellipse(wx,wy,rad,rad*.64,0,0,Math.PI*2);ctx.stroke();
+ }
+ for(let i=0;i<10;i++){
+  const a=i*Math.PI/5,flight=Math.max(0,Math.sin(Math.min(1,t/25)*Math.PI));
+  ctx.fillStyle=`rgba(225,248,255,${Math.max(0,.8-t/37)})`;
+  ctx.beginPath();ctx.arc(wx+Math.cos(a)*flight*(15+i%3*6),wy+Math.sin(a)*flight*(12+i%3*5)-flight*8,Math.max(0.1,2.3-t/28),0,Math.PI*2);ctx.fill();
+ }
+ ctx.restore();
+}
+for(const q of l.sands)drawSandBunker(q)
+for(const q of l.walls)drawWoodBarrier(q)
+for(const b of l.bumpers)drawCenterBumper(b)
+for(const b of l.moving){ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);roundRect(-b.length/2,-9,b.length,18,7,'#f3d987','#fff4b4');ctx.restore();ctx.beginPath();ctx.arc(b.x,b.y,13,0,Math.PI*2);ctx.fillStyle='#6b4734';ctx.fill()}
+ctx.restore();const hole=l.cup;const holeDist=Math.hypot(ball.x-hole[0],ball.y-hole[1]);ctx.beginPath();ctx.ellipse(hole[0]+2,hole[1]+4,18,10,0,0,Math.PI*2);ctx.fillStyle='#0005';ctx.fill();ctx.beginPath();ctx.arc(hole[0],hole[1],15,0,Math.PI*2);ctx.fillStyle='#102520';ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#c2d5a4';ctx.stroke();const flagAlpha=clamp((holeDist-70)/28,0,1);if(flagAlpha>0){ctx.save();ctx.globalAlpha=flagAlpha;ctx.strokeStyle='#f7f0d7';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(hole[0],hole[1]);ctx.lineTo(hole[0],hole[1]-58);ctx.stroke();ctx.fillStyle='#ff6458';ctx.beginPath();ctx.moveTo(hole[0]+1,hole[1]-58);ctx.lineTo(hole[0]+33,hole[1]-47);ctx.lineTo(hole[0]+1,hole[1]-35);ctx.closePath();ctx.fill();ctx.restore();}
+if(count>1){for(let i=0;i<count;i++){if(i===player||turnStates[i]?.done)continue;const b=turnStates[i]?.ball;if(!b)continue;const overlap=Math.hypot(b.x-ball.x,b.y-ball.y)<R*2+4;const offset=overlap?22+i*13:0;ctx.save();ctx.globalAlpha=.85;ctx.fillStyle=playerColors[i];ctx.strokeStyle='#173227';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(b.x,b.y+offset,overlap?5:8,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#10251f';ctx.fillText(i+1,b.x,b.y+offset);ctx.restore();}}
+if(aiming&&pointer){const dx=ball.x-pointer.x,dy=ball.y-pointer.y,m=Math.hypot(dx,dy)||1,force=aimPower();ctx.setLineDash([10,8]);ctx.strokeStyle='#f8ffb8';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(ball.x,ball.y);ctx.lineTo(ball.x+dx/m*(40+force*155),ball.y+dy/m*(40+force*155));ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle='#f7f7f7a0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ball.x,ball.y);ctx.lineTo(pointer.x,pointer.y);ctx.stroke()}
+if((aiming&&pointer)||swing>0){const ang=aiming?Math.atan2(ball.y-pointer.y,ball.x-pointer.x):swingAngle;ctx.save();ctx.translate(ball.x,ball.y);ctx.rotate(ang);const back=aiming?18+aimPower()*22:18+swing*1.4;ctx.strokeStyle='#b5bdc4';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-back,0);ctx.lineTo(-back-45,-38);ctx.stroke();roundRect(-back-7,-15,10,30,3,'#555e62','#dbdfe2');ctx.restore()}
+ctx.save();if(won&&!replay){const sc=Math.max(0,1-sink/26);ctx.translate(ball.x,ball.y);ctx.scale(sc,sc);ctx.translate(-ball.x,-ball.y);}
+if(waterSplash){
+  const scale=Math.max(0,1-waterSplash.time/23);
+  ctx.translate(ball.x,ball.y);ctx.scale(scale,scale);ctx.translate(-ball.x,-ball.y);
+  ctx.globalAlpha=Math.max(0,1-waterSplash.time/25);
+}
+ctx.beginPath();ctx.ellipse(ball.x+3,ball.y+7,R+3,8,0,0,Math.PI*2);ctx.fillStyle='#00000055';ctx.fill();const g=ctx.createRadialGradient(ball.x-5,ball.y-7,1,ball.x,ball.y,R+2);g.addColorStop(0,'#ffffff');g.addColorStop(.55,'#f8fbfc');g.addColorStop(.82,'#e4eaee');g.addColorStop(1,'#b9c5cc');ctx.beginPath();ctx.arc(ball.x,ball.y,R,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();ctx.save();ctx.translate(ball.x,ball.y);ctx.rotate(ball.rot||0);ctx.beginPath();ctx.arc(0,0,R-1,0,Math.PI*2);ctx.clip();for(let yy=-8;yy<=8;yy+=4){for(let xx=-8;xx<=8;xx+=4){const ox=xx+((Math.abs(yy)%8===0)?1.4:0);if(ox*ox+yy*yy<(R-3)*(R-3)){ctx.beginPath();ctx.arc(ox,yy,.8,0,Math.PI*2);ctx.fillStyle='#d3dce1aa';ctx.fill()}}}ctx.strokeStyle='#1e1e1e';ctx.lineWidth=.65;ctx.beginPath();ctx.moveTo(-5.6,1.6);ctx.lineTo(5.6,1.6);ctx.stroke();ctx.fillStyle='#1c1c1c';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='600 4.9px Arial';ctx.fillText('PRO V1',0,-1.1);ctx.font='700 5.2px Arial';ctx.fillText('1',0,4.1);ctx.restore();ctx.beginPath();ctx.arc(ball.x,ball.y,R,0,Math.PI*2);ctx.strokeStyle='#eef4f6';ctx.lineWidth=1.15;ctx.stroke();
+ctx.restore();
+if(count>1&&!won&&!waterSplash){ctx.save();ctx.strokeStyle=playerColors[player];ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(ball.x,ball.y,R+5,0,Math.PI*2);ctx.stroke();ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';roundRect(ball.x-37,ball.y-36,74,17,5,'#10251feb');ctx.fillStyle=playerColors[player];ctx.fillText('JUGADOR '+(player+1),ball.x,ball.y-27);ctx.restore();}
+ctx.restore();roundRect(23,12,310,34,10,'#09271ed9');ctx.fillStyle='#e5ffe7';ctx.font='bold 18px system-ui';ctx.fillText(`HOYO ${idx+1}  ·  ${l.name}`,37,35);ctx.save();roundRect(650,12,285,34,10,'#09271ef5',playerColors[player]);ctx.fillStyle=playerColors[player];ctx.font='bold 17px system-ui';ctx.textAlign='center';ctx.fillText(`JUGADOR ${player+1} · ${shotPending?'TIRANDO':won?'EMBOCADO':'TU TURNO'}`,792,35);ctx.restore();}
+function frame(time){const dt=prevTime?clamp((time-prevTime)/16.67,.3,2):1;prevTime=time;if(replay&&(!net||net.host)){replay.i+=dt*.7;const point=trace[Math.floor(replay.i)];if(point){Object.assign(ball,point)}else{replay=null;nextHole()}}else{if(!net||net.host&&!netPaused)update(dt);if((!net||net.host)&&playing&&!won&&!stopped()&&!waterSplash)trace.push({x:ball.x,y:ball.y,rot:ball.rot});if(won&&(!net||net.host))sink+=dt;}swing=Math.max(0,swing-dt);const target=$('camera').checked&&!won?1.45:1;zoom+=(target-zoom)*.08;cameraX+=(clamp(ball.x,W/(2*zoom),W-W/(2*zoom))-cameraX)*.1;cameraY+=(clamp(ball.y,H/(2*zoom),H-H/(2*zoom))-cameraY)*.1;draw();requestAnimationFrame(frame)}
+function selectMode(n){$('players').value=String(n);for(const b of document.querySelectorAll('#modeButtons button'))b.setAttribute('aria-pressed',String(Number(b.dataset.count)===n));$('modeStatus').textContent='Seleccionado: '+n+' jugador'+(n===1?'':'es');if(!playing){count=n;player=0;updateUI();}}
+for(const b of document.querySelectorAll('#modeButtons button'))b.onclick=()=>selectMode(Number(b.dataset.count));
+$('players').onchange=()=>{const n=Number($('players').value);if(playing){if(confirm('¿Comenzar una nueva partida con '+n+' jugadores?')){newRound();selectMode(n);$('overlay').classList.add('hidden');}else selectMode(count);}else selectMode(n);};
+$('newRound').onclick=()=>{location.reload()};$('card').onclick=()=>alert(cardText());try{$('record').textContent=localStorage.getItem('geoBest')?'Récord: '+localStorage.getItem('geoBest'):'Sin récord'}catch(e){}
+$('restart').onclick=()=>{if(!net&&playing&&!won&&!shotPending){for(const c of cards)delete c[idx];startSharedHole()}};
+setup();selectMode(Number($('players').value));show('GEO Golf 2026','18 hoyos · 1 a 4 jugadores locales · Elige campo y velocidad del green antes de comenzar. Arrastra la bola hacia atrás para lanzar. En multijugador, cada persona da un golpe y pasa el turno. Todos juegan el mismo hoyo hasta embocar.','Empezar torneo',newRound);requestAnimationFrame(frame);
+
+function escapeName(n){return String(n).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function status(t){$('onlineStatus').textContent=t;}
+function canShoot(){return !net||net.started&&!netWaiting&&!netPaused&&net.seat===player&&$('overlay').classList.contains('hidden');}
+async function api(action,extra={}){const r=await fetch('/api/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...extra,code:net?.code,token:net?.token,...(action==='join'?{code:extra.code}:{})})});const data=await r.json();if(!r.ok)throw Error(data.error);return data;}
+function enter(data){net={...data,started:false,names:[],epoch:0};playing=false;aiming=false;$('joinControls').hidden=true;$('lobby').hidden=false;$('roomLabel').textContent='Sala '+net.code+' · Tú: jugador '+(net.seat+1);$('onlineStart').hidden=!net.host;for(const id of ['players','newRound','restart'])$(id).disabled=true;$('action').disabled=true;$('modePicker').hidden=true;status('Esperando jugadores...');}
+$('createRoom').onclick=async()=>{try{enter(await api('create',{name:$('nickname').value}));}catch(e){status(e.message)}};
+$('joinRoom').onclick=async()=>{try{enter(await api('join',{name:$('nickname').value,code:$('roomCode').value.trim().toUpperCase()}));}catch(e){status(e.message)}};
+$('copyInvite').onclick=async()=>{const u=new URL(location.href);u.searchParams.set('room',net.code);try{await navigator.clipboard.writeText(u.href);status('Invitación copiada.');}catch{prompt('Copia esta invitación',u.href)}};
+$('leaveRoom').onclick=()=>location.reload();
+$('onlineStart').onclick=async()=>{try{await api('start',{theme:$('theme').value,speed:$('speed').value});}catch(e){status(e.message)}};
+const invite=new URLSearchParams(location.search).get('room');if(invite)$('roomCode').value=invite;
+function initOnline(d){net.started=true;count=d.names.length;$('players').value=count;$('theme').value=d.theme;$('speed').value=d.speed;for(const id of ['theme','speed','players'])$(id).disabled=true;$('onlineStart').hidden=true;$('action').disabled=false;$('overlay').classList.add('hidden');idx=0;cards=Array.from({length:count},()=>[]);startSharedHole();playing=true;}
+function snapshot(){return {idx,player,count,cards,turnStates,ball,strokes,shotPending,won,playing,waterSplash,sink,swing,swingAngle,angles:levels[idx].moving.map(b=>b.angle),overlay:!$('overlay').classList.contains('hidden'),title:$('modalTitle').textContent,body:$('modalText').textContent,button:$('action').textContent,message:$('messageWater').textContent};}
+function apply(s){idx=s.idx;player=s.player;count=s.count;cards=s.cards;turnStates=s.turnStates;ball=s.ball;strokes=s.strokes;shotPending=s.shotPending;won=s.won;playing=s.playing;waterSplash=s.waterSplash;sink=s.sink;swing=s.swing;swingAngle=s.swingAngle;levels[idx].moving.forEach((b,i)=>b.angle=s.angles[i]||0);$('overlay').classList.toggle('hidden',!s.overlay);$('modalTitle').textContent=s.title;$('modalText').textContent=s.body;$('action').textContent='Esperando al anfitrión';$('action').disabled=true;$('messageWater').textContent=s.message;updateUI();}
+let polling=false;
+setInterval(async()=>{if(!net||polling)return;polling=true;try{const d=await api('poll',net.host&&net.started?{state:snapshot()}:{});net.names=d.names;net.epoch=d.epoch;netPaused=false;$('roster').textContent=d.names.map((n,i)=>`${i+1}. ${n}`).join('  ·  ');if(d.started&&!net.started)initOnline(d);if(net.started){if(net.host&&d.command){launch(d.command.dx,d.command.dy);}if(!net.host&&d.state)apply(d.state);netWaiting=!!d.pending;status((net.seat===player?'Tu turno':'Turno de '+(net.names[player]||'otro jugador'))+' · Sala '+net.code);}else status(d.names.length+' jugadores en la sala · esperando inicio');}catch(e){netPaused=true;status('Conexión interrumpida: '+e.message);}finally{polling=false}},100);
+})();
+</script></body></html>
